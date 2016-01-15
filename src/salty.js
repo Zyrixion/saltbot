@@ -406,7 +406,7 @@ if (window.location.href == "http://www.saltybet.com/" || window.location.href =
 					window.isExhibs = false;
 					console.log("No Exhibition Detected");
 				}
-				else {
+				else if (message.search("exhibition") >= 0) {
 					window.isExhibs = true;
 					console.log("Exhibition Detected");
 				}
