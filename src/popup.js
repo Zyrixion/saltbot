@@ -236,7 +236,9 @@ Simulator.prototype.evalMutations = function(mode) {
 		// process matches
 		for (var i = 0; i < matches.length; i++) {
 			
-			console.log("Processing match " + i + " out of " + matches.length);
+			if ((i % 1000 == 0) || (i == matches.length - 1)) {
+				console.log("Processing match " + i + " out of " + matches.length);  //Updating this line to once every thousand matches and first/last match for making my devtools window shit out
+			}
 
 			var info = {
 				"character1" : updater.getCharacter(matches[i].c1, characterRecords, namesOfCharactersWhoAlreadyHaveRecords),
