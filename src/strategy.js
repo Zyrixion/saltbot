@@ -96,6 +96,9 @@ Strategy.prototype.getBetAmount = function(balance, tournament, debug) {  //is t
 		}
 		if (amountToBet > balance)
         	amountToBet = balance;  //makes sure to never try to bet more than the current balance
+		
+		amountToBet = balance;  //always all-in during tournaments.  crowbar code so I don't have to comment the crap above.
+		
 		if (debug) {
 			if (allIn)
 				console.log("- ALL IN: " + balance);
@@ -281,10 +284,14 @@ Chromosome.prototype.mate = function(other) {
 		if ( typeof offspring[i] != "function") {
 			offspring[i] = (Math.random() > 0.5) ? this[i] : other[i];
 			// 20% chance of mutation
-			var radiation = Math.random() + Math.random();
-			radiation *= radiation;
-			if (Math.random() < 0.2 && offspring[i] != null)
-				offspring[i] *= radiation;
+			//var radiation = Math.random() + Math.random();
+			//radiation *= radiation;
+			//if (Math.random() < 0.2 && offspring[i] != null)
+				//offspring[i] *= radiation;
+			var radiation = Math.random();
+			if (radiation < 0.2 && offspring[i] != null)
+				var rads2 = Math.random();
+				offspring[i] *= (rads2 < 0.5) ? (1 + radiation) : (1 - radiation);  //maximum of 20% swing up or down per value per generation
 		}
 	}
 	return offspring;
@@ -522,6 +529,45 @@ ConfidenceScore.prototype.execute = function(info) {
 	var c2rw = (c2Stats.charRecentTierWin != "") ? c2Stats.charRecentTierWin : c2t;
 	var c2rl = (c2Stats.charRecentTierLoss != "") ? c2Stats.charRecentTierLoss : c2t;
 	
+	if (this.debug) {
+		if (c1t != null) {
+			console.log("c1t = " + c1t);
+		}
+		else {
+			console.log("c1t is null");
+		}
+		if (c1rw != null) {
+			console.log("c1rw = " + c1rw);
+		}
+		else {
+			console.log("c1rw is null");
+		}
+		if (c1rl != null) {
+			console.log("c1rl = " + c1rl);
+		}
+		else {
+			console.log("c1rl is null");
+		}
+		if (c2t != null) {
+			console.log("c2t = " + c2t);
+		}
+		else {
+			console.log("c2t is null");
+		}
+		if (c2rw != null) {
+			console.log("c2rw = " + c2rw);
+		}
+		else {
+			console.log("c2rw is null");
+		}
+		if (c2rl != null) {
+			console.log("c2rl = " + c2rl);
+		}
+		else {
+			console.log("c2rl is null");
+		}
+	}
+	
 	if ((c1t == c2t) && (c1rw == c2rw) && (c1rl == c2rl)) {
 		matchTier = c1t;
 		if (this.debug) {
@@ -540,10 +586,22 @@ ConfidenceScore.prototype.execute = function(info) {
 			console.log("matchTier is " + matchTier + " tier, by agreement of c1rl & c2rl only");
 		}
 	}
-	else if ((c1t == c2t) && (c1rw != c2rw) && (c1rl != c2rl)) {
-		matchTier = (charTiers.indexOf(c1t) > charTiers.indexOf(c2t)) ? c1t : c2t;
+	else if ((c1t == c2t) && ((c1rw != c2rw) || (c1rl != c2rl))) {
+		matchTier = c1t;
 		if (this.debug) {
 			console.log("matchTier is " + matchTier + " tier, by fallback to agreement of c1t & c2t only");
+		}
+	}
+	else if ((c1rw == c2rw) && ((c1t != c2t) || (c1rl != c2rl))) {
+		matchTier = c1rw;
+		if (this.debug) {
+			console.log("matchTier is " + matchTier + " tier, by fallback to agreement of c1rw & c2rw only");
+		}
+	}
+	else if ((c1rl == c2rl) && ((c1t != c2t) || (c1rw != c2rw))) {
+		matchTier = c1rl;
+		if (this.debug) {
+			console.log("matchTier is " + matchTier + " tier, by fallback to agreement of c1rl & c2rl only");
 		}
 	}
 	else if ((c1t != "U") & (c2t == "U")) {
@@ -627,6 +685,8 @@ ConfidenceScore.prototype.execute = function(info) {
 			}
 		}
 		if (this.debug) {
+			console.log("c1ScoreValue is " + c1ScoreValue.toFixed(2));
+			console.log("c2ScoreValue is " + c2ScoreValue.toFixed(2));
 			console.log("c1Score after win/loss weight: " + c1Score.toFixed(2));
 			console.log("c2Score after win/loss weight: " + c2Score.toFixed(2));
 			console.log("matchTier chromosome call is " + "w" + matchTier);
@@ -644,6 +704,8 @@ ConfidenceScore.prototype.execute = function(info) {
 			}
 		}
 		if (this.debug) {
+			console.log("c1ScoreValue is " + c1ScoreValue.toFixed(2));
+			console.log("c2ScoreValue is " + c2ScoreValue.toFixed(2));
 			console.log("c1Score after win/loss weight: " + c1Score.toFixed(2));
 			console.log("c2Score after win/loss weight: " + c2Score.toFixed(2));
 			console.log("matchTier chromosome call is " + "w" + matchTier);
@@ -651,7 +713,21 @@ ConfidenceScore.prototype.execute = function(info) {
 	}
 	else {
 		if (this.debug) {
-			console.log("c1WT or c2WT is null, or matchTier is null or of invalid value and that is why you are seeing this.");
+			if (c1WT == null) {
+				console.log("c1WT is null");
+			}
+			if (c2WT == null) {
+				console.log("c2WT is null");
+			}
+			if (c1WT == c2WT){
+				console.log("c1WT == c2WT");
+			}
+			if (matchTier == null) {
+				console.log("matchTier is null");
+			}
+			if (matchTier != null) {
+				console.log("matchTier is potentially invalid value, value = " + matchTier);
+			}
 		}
 	}
 												  
@@ -681,9 +757,9 @@ ConfidenceScore.prototype.execute = function(info) {
 	}
 
 	//and then win time weighting
-	if ((c1Stats.averageWinTime != null) && (c2Stats.averageWinTime != null) && (matchTier != null) && (charTiers.indexOf(matchTier) >=0)) {
-        c1Score += ((this.chromosome["wt" + matchTier]) * (1 - (c1Stats.averageWinTime / (c1Stats.averageWinTime + c2Stats.averageWinTime))));
-		c2Score += ((this.chromosome["wt" + matchTier]) * (1 - (c2Stats.averageWinTime / (c1Stats.averageWinTime + c2Stats.averageWinTime))));
+	if ((c1Stats.averageWinTimeRaw != null) && (c2Stats.averageWinTimeRaw != null) && (matchTier != null) && (charTiers.indexOf(matchTier) >=0)) {
+        c1Score += ((this.chromosome["wt" + matchTier]) * (1 - (c1Stats.averageWinTimeRaw / (c1Stats.averageWinTimeRaw + c2Stats.averageWinTimeRaw))));
+		c2Score += ((this.chromosome["wt" + matchTier]) * (1 - (c2Stats.averageWinTimeRaw / (c1Stats.averageWinTimeRaw + c2Stats.averageWinTimeRaw))));
 		if (this.debug) {
 			console.log("c1Score after win time weight: " + c1Score.toFixed(2));
 			console.log("c2Score after win time weight: " + c2Score.toFixed(2));
@@ -692,9 +768,9 @@ ConfidenceScore.prototype.execute = function(info) {
 	}
 
 	//and then loss time weighting
-	if ((c1Stats.averageLossTime != null) && (c2Stats.averageLossTime != null) && (matchTier != null) && (charTiers.indexOf(matchTier) >=0)) {
-		c1Score += ((this.chromosome["lt" + matchTier]) * (c1Stats.averageLossTime / (c1Stats.averageLossTime + c2Stats.averageLossTime)));
-		c2Score += ((this.chromosome["lt" + matchTier]) * (c2Stats.averageLossTime / (c1Stats.averageLossTime + c2Stats.averageLossTime)));
+	if ((c1Stats.averageLossTimeRaw != null) && (c2Stats.averageLossTimeRaw != null) && (matchTier != null) && (charTiers.indexOf(matchTier) >=0)) {
+		c1Score += ((this.chromosome["lt" + matchTier]) * (c1Stats.averageLossTimeRaw / (c1Stats.averageLossTimeRaw + c2Stats.averageLossTimeRaw)));
+		c2Score += ((this.chromosome["lt" + matchTier]) * (c2Stats.averageLossTimeRaw / (c1Stats.averageLossTimeRaw + c2Stats.averageLossTimeRaw)));
 		if (this.debug) {
 			console.log("c1Score after loss time weight: " + c1Score.toFixed(2));
 			console.log("c2Score after loss time weight: " + c2Score.toFixed(2));
@@ -776,6 +852,44 @@ ConfidenceScore.prototype.execute = function(info) {
 		console.log("Final c1Score: " + c1Score.toFixed(2));
 		console.log("Final c2Score: " + c2Score.toFixed(2));
 	}
+	
+	//debug code for the main account while this script remains unstable
+	 var elems = document.getElementsByClassName("navbar-text");
+	 /*
+	 var arr = [];
+	 for(var i = 0; i < elems.length; i++) {
+		 arr.push(elems[i].innerHTML);
+	}
+	*/
+	//thank you my bruh luminantAegis for help with this stupid code
+	
+	var isMainAccount = false;
+	for (var i =0; i < elems.length; i++) {
+		if (elems[i].innerHTML.indexOf("Zyrixion") >= 0) {
+			console.log("This is the main account.");
+			isMainAccount = true;
+			break;
+		}
+	}
+
+	if (isMainAccount) {
+		if (c1Stats.averageOdds != null && c2Stats.averageOdds != null) {
+			if (c1Stats.averageOdds > c2Stats.averageOdds) {
+				c1Score = oddsWeight;
+				c2Score = 0;
+			}
+			else if (c1Stats.averageOdds < c2Stats.averageOdds) {
+				c2Score = oddsWeight;
+				c1Score = 0;
+			}
+		}
+	}
+	isMainAccount = false;
+	//end debug code
+	
+	
+	
+	
 	this.prediction = (c1Score > c2Score) ? c1.name : c2.name;
 
 	var winnerPoints = (this.prediction == c1.name) ? c1Score : c2Score;
@@ -784,7 +898,7 @@ ConfidenceScore.prototype.execute = function(info) {
 	
 	if (this.debug) {
 		console.log("totalAvailablePoints is " + totalAvailablePoints.toFixed(2));
-		console.log("Confidence is " + this.confidence.toFixed(2));
+		console.log("Confidence is " + this.confidence.toFixed(4));
 		console.log("winnerPoints is " + winnerPoints.toFixed(2));
 	}
 
@@ -799,16 +913,36 @@ ConfidenceScore.prototype.execute = function(info) {
 		nerfAmount += .3;
 		nerfMsg += "\n- insufficient information (scores: " + c1Score.toFixed(2) + ":" + c2Score.toFixed(2) + "), W:L(P1)(P2)-> (" + c1.wins.length + ":" + c1.losses.length + ")(" + c2.wins.length + ":" + c2.losses.length + "), ";
 	}
+	else if ((this.confidence >= 0.5) && (this.confidence < 0.6)) {  //originally it was just this block as an else
+		nerfAmount -= ((this.confidence - 0.5) * 2);
+	}
+	else if ((this.confidence >= 0.6) && (this.confidence < 0.7)) {
+		nerfAmount -= ((this.confidence - 0.5) * 3);
+	}
+	else if ((this.confidence >= 0.7) && (this.confidence < 0.8)) {
+		nerfAmount -= ((this.confidence - 0.5) * 4);
+	}
+	else if ((this.confidence >= 0.8) && (this.confidence < 0.9)) {
+		nerfAmount -= ((this.confidence - 0.5) * 6);
+	}
+	else if ((this.confidence >= 0.9) && (this.confidence < 1.0)) {
+		nerfAmount -= ((this.confidence - 0.5) * 12);
+	}
 
 	// nerf the confidence if there is a reason
-	if (nerfAmount != 0) {
+	if (nerfAmount > 0) {
 		if (this.debug)
 			console.log(nerfMsg + "\n--> dropping confidence by " + (nerfAmount * 100).toFixed(0) + "%");
 		this.confidence *= 1 - nerfAmount;
 	}
+	else if ((nerfAmount < 0)) {
+		if (this.debug)
+			console.log(nerfMsg + "\n--> increasing bet by " + (nerfAmount * -100).toFixed(2) + "% due to confidence");
+		this.confidence *= 1 - nerfAmount;
+	}
 
 	// make sure something gets bet
-	if (this.confidence < 0)
+	if (this.confidence <= 0)
 		this.confidence = .01;
 
 	return this.prediction;
